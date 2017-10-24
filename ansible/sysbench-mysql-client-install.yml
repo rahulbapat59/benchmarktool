@@ -1,0 +1,66 @@
+---
+
+- hosts: "{{ target }}"
+  tasks:
+
+    - name: Install basics with apt
+      apt: pkg={{item}} state=installed
+      with_items: "{{ install_packages_apt }}"
+      when: ansible_pkg_mgr == 'apt'
+      become: true
+      vars:
+        install_packages_apt:
+          - build-essential
+          - autoconf
+          - automake
+          - make
+          - libtool
+          - libssl-dev
+          - git
+
+    - name: Install basics with yum
+      yum: pkg={{item}} state=installed
+      with_items: "{{ install_packages_yum }}"
+      when: ansible_pkg_mgr == 'yum'
+      become: true
+      vars:
+        install_packages_yum:
+          - gcc 
+          - gcc-c++
+          - autoconf
+          - automake
+          - make
+          - libtool
+          - git
+          - openssl-devel
+
+    - name: Check if clone exists
+      stat: "path=/opt/benchmarks/sysbench"
+      register: scripts_repo
+
+    - name: install sysbench git repo
+      git: repo="https://github.com/akopytov/sysbench" dest="/opt/benchmarks/sysbench"
+      when: not scripts_repo.stat.exists
+
+    - name: Update script
+      git: repo="https://github.com/akopytov/sysbench" dest="/opt/benchmarks/sysbench"
+      when: scripts_repo.stat.exists
+
+    - name: run autogen.sh
+      shell: ./autogen.sh
+      args:
+       chdir: "/opt/benchmarks/sysbench"
+
+    - name: Running ./configure for sysbench
+      command: '"{{ item }}" chdir=/opt/benchmarks/sysbench'
+      with_items:
+        - ./configure
+    
+    - name: Running "make" for sysbench
+      command: '"{{ item }}" chdir=/opt/benchmarks/sysbench'
+      with_items:
+        - make
+    
+    - name: Running "make install" for sysbench
+      become: true
+      command: 'make install chdir=/opt/benchmarks/sysbench'

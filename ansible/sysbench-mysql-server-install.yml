@@ -1,0 +1,62 @@
+---
+- hosts: "{{ target }}"
+  tasks:
+
+    - name: Install basics with apt
+      apt: pkg={{item}} state=installed
+      with_items: "{{ install_packages_apt }}"
+      when: ansible_pkg_mgr == 'apt'
+      become: true
+      vars:
+        install_packages_apt:
+          - build-essential
+          - autoconf
+          - automake
+          - make
+          - libtool
+          - libssl-dev
+          - git
+          - libnuma-dev
+          - libaio-dev
+          - cmake
+
+    - name: Install basics with yum
+      yum: pkg={{item}} state=installed
+      with_items: "{{ install_packages_yum }}"
+      when: ansible_pkg_mgr == 'yum'
+      become: true
+      vars:
+        install_packages_yum:
+          - gcc
+          - gcc-c++
+          - autoconf
+          - automake
+          - make
+          - libtool
+          - git
+          - openssl-devel
+          - libaio-devel
+          - numactl-devel
+
+    - name: grab build dependencies for mysql-server
+      command: apt -y build-dep mysql-server-5.7
+      when: ansible_pkg_mgr == 'apt'
+      become: true
+
+    - name: Check if clone exists
+      stat: "path=/opt/mysql-server"
+      register: scripts_repo
+
+    - name: install sysbench git repo
+      git: repo="https://github.com/mysql/mysql-server.git" dest="/opt/mysql-server"
+      when: not scripts_repo.stat.exists
+
+    - name: Update script
+      git: repo="https://github.com/mysql/mysql-server.git" dest="/opt/mysql-server"
+      when: scripts_repo.stat.exists
+
+    - name: Configure and build
+      command: 'cmake -DBUILD_CONFIG=mysql_release -DDOWNLOAD_BOOST=1 -DWITH_BOOST=/tmp/boost -DINSTALL_LAYOUT=STANDALONE -DCMAKE_INSTALL_PREFIX=/usr/local/mysql chdir=/opt/mysql-server'
+
+    - name: make
+      command: 'make -j chdir=/opt/mysql-server'

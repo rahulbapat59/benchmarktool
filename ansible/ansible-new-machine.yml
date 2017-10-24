@@ -1,0 +1,86 @@
+---
+- hosts: '{{ target }}'
+  vars:
+    sudoers:
+      - "YOUR USERNAME" 
+
+  tasks:
+
+  - name: Creates directory
+    become: true
+    file:
+      path: /opt/benchmarks
+      state: directory
+
+  - name: Change permissions
+    when: ansible_pkg_mgr == 'apt'
+    file: path="/opt/benchmarks" group=sudo mode=0774
+    become: true
+
+  - name: Change permissions
+    when: ansible_pkg_mgr == 'yum'
+    file: path="/opt/benchmarks" group=wheel mode=0774
+    become: true
+
+  - name: Allow 'sudo' group to have passwordless sudo
+    when: ansible_pkg_mgr == 'apt'    
+    lineinfile:
+      dest: /etc/sudoers
+      state: present
+      regexp: '^%sudo'
+      line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+      validate: 'visudo -cf %s'
+
+  - name: Add sudoers users to wheel group
+    when: ansible_pkg_mgr == 'yum'
+    user:
+      name: "{{ item }}"
+      groups: wheel
+      append: yes
+    with_items: "{{ sudoers }}"
+    become: true
+
+  - name: Install basics with apt
+    apt: pkg={{item}} state=installed
+    with_items: "{{ install_packages_apt }}"
+    when: ansible_pkg_mgr == 'apt'  
+    vars:
+      install_packages_apt: 
+      - build-essential
+      - perl
+      - rsync
+      - libevent-dev
+      - ethtool
+      - sysstat
+      - util-linux
+      - htop
+      - byobu
+      - lldpd
+      - ganglia-monitor
+    become: true
+
+  - name: Install basics with yum
+    yum: name={{item}} state=present
+    with_items: "{{ install_packages_yum }}"
+    when: ansible_pkg_mgr == 'yum'  
+    vars:
+      install_packages_yum: 
+      - gcc
+      - make
+      - perl
+      - zeromq-devel
+      - ethtool
+      - byobu
+      - rsync
+      - python34
+    become: true
+
+  - name: System limits config
+    lineinfile: 
+     dest: /etc/security/limits.conf
+     line: "{{ item }}"
+    with_items:
+      - '* soft nofile 999999'
+      - '* hard nofile 999999'
+
+  - sysctl: name=net.core.somaxconn value=65535 sysctl_file=/etc/sysctl.conf

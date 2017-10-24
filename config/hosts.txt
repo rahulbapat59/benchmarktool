@@ -1,0 +1,12 @@
+# Allowed Options
+# Following are optional settings
+# BMC_IP : BMC IP address of the machine
+# BMC_USER_NAME: Username logging into BMC which can be used for serial over lan ipmi
+# BMC_PASSWORD: Password for logging into BMC which can be used for serial over lan ipmi
+# BMC_TYPE: Manufacturer of the BMC console. Allowed options: dell, megarac, supermicro, gigabyte
+# IP: IP address of system over which files will be copied over to the system.
+# LAN_IP: IP address of system over which actual benchmark test will be carried out.
+
+
+[t99-2s-02]
+
