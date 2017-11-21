@@ -163,7 +163,9 @@ START_SYS_MONITOR ${SYS_NAME}
 #TODO:FIRETESTS
 pushd /opt/cpu2017
 . shrc
-runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
+#runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
+runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
+mv results/* ${PARENT}/${LOG_LOCATION}
 popd
 
 echo -n "Power:" >> ${LOG_LOCATION}/${logfile}
