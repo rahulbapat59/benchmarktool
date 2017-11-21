@@ -158,7 +158,7 @@ touch $PWD/${LOG_LOCATION}/monitor.log
 touch $PWD/${LOG_LOCATION}/power_monitor.log
 
 START_SYS_MONITOR ${SYS_NAME}
-START_POWER_MONITOR ${SYS_NAME}
+#START_POWER_MONITOR ${SYS_NAME}
 
 #TODO:FIRETESTS
 pushd /opt/cpu2017
@@ -170,10 +170,10 @@ echo -n "Power:" >> ${LOG_LOCATION}/${logfile}
 
 KILL_MPSTAT
 sleep 10
-cat powerstats.csv >> ${LOG_LOCATION}/${logfile}
+#cat powerstats.csv >> ${LOG_LOCATION}/${logfile}
 
-cp powerstats.csv $PWD/${LOG_LOCATION}
-cp power_monitor.log $PWD/${LOG_LOCATION}
+#cp powerstats.csv $PWD/${LOG_LOCATION}
+#cp power_monitor.log $PWD/${LOG_LOCATION}
 
 echo "Collecting Results"
 scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/specint/${finalname}/${finalname1}/SERVER_STATS ../

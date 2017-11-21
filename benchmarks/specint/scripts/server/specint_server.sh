@@ -75,7 +75,7 @@ function START_SYS_MONITOR(){
 }
 
 function ENVIRONMENT_VERSIONS(){
-../common/environment.sh
+./environment.sh
 }
 
 function KILL_MPSTAT(){
