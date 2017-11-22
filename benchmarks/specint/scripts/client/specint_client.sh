@@ -11,6 +11,7 @@ COPIES=1
 CONFIGPATH="/opt/cpu2017/config/gcc7"
 TYPE=int
 WEBSERVER="x86-ivy-cb1"
+NUMCORES=20
 
 function HELP() {
     NORM=`tput sgr0`
@@ -19,9 +20,9 @@ function HELP() {
     echo -e \\n"Help documentation for ${BOLD}${SCRIPT}.${NORM}"\\n
     echo -e "${REV}Basic usage:${NORM} ${BOLD}$SCRIPT file.ext${NORM}"\\n
     echo "Command line switches are optional. The following switches are recognized."
-        echo "${REV}-i or --iterations${NORM} --Sets the value for option ${BOLD}Number of iterations for coremark${NORM}. Default is ${BOLD}100000${NORM}."
+        echo "${REV}-i or --iterations${NORM} --Sets the value for option ${BOLD}Number of iterations for coremark${NORM}. Default is ${BOLD}1${NORM}."
         echo "${REV}-c or --copies${NORM} --Sets the value for option ${BOLD}Number of copies for the spec run${NORM}. Default is ${BOLD}1${NORM}."
-        echo "${REV}-f or --configpath${NORM} --Sets the value for option ${BOLD}Location of configuration file${NORM}. Default is ${BOLD}/opt/cpu2006${NORM}."
+        echo "${REV}-f or --configpath${NORM} --Sets the value for option ${BOLD}Location of configuration file${NORM}. Default is ${BOLD}/opt/cpu2017${NORM}."
         echo "${REV}-t or --type${NORM} --Sets the value for option ${BOLD}Spec int or Spec fp${NORM}. Default is ${BOLD}int${NORM}."
 
     echo -e "${REV}-h${NORM}  --Displays this help message. No further functions are performed."\\n
@@ -104,7 +105,7 @@ if [ $NUMARGS -eq 0 ]; then
   HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores: -- "$@")
 then
     exit 1
 fi
@@ -126,7 +127,7 @@ do
                 -c|--copies) COPIES="${2//\'/}" ; shift;;
                 -f|--configpath) CONFIGPATH="${2//\'/}" ; shift;;
                 -t|--type) TYPE="${2//\'/}" ; shift;;
-
+                -n|--num_cores) NUMCORES="${2//\'/}" ; shift;; 
         --) break;;
         -*) ;;
         *) break;;
@@ -164,7 +165,7 @@ START_SYS_MONITOR ${SYS_NAME}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
-runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
+runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/opt/install num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
 mv results/* ${PARENT}/${LOG_LOCATION}
 popd
 
