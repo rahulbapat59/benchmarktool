@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ulimit -n 10000
-
+sudo chmod -R 777 /benchmarktool
 set +x
 SCRIPT=`basename ${BASH_SOURCE[0]}`
 USER_NAME=`whoami`
@@ -165,7 +165,9 @@ START_SYS_MONITOR ${SYS_NAME}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
-runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/opt/install num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
+cmd = "runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/opt/install --define num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate"
+echo "`date -u` :: ${cmd}" >> cmdline.txt
+${cmd} > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
 mv results/* ${PARENT}/${LOG_LOCATION}
 popd
 

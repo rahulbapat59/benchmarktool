@@ -104,7 +104,7 @@ if [ $NUMARGS -eq 0 ]; then
   HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores: -- "$@")
 then
     exit 1
 fi
@@ -140,4 +140,4 @@ comment_folder=$(dirname ${date_folder})
 finalname=$(basename parentdir="$(dirname "$date_folder")")
 finalname1=$(basename parentdir="$(dirname "$PWD")")
 
-ENVIRONMENT_VERSIONS
+ENVIRONMENT_VERSIONS $PWD
