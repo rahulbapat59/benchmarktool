@@ -140,4 +140,4 @@ comment_folder=$(dirname ${date_folder})
 finalname=$(basename parentdir="$(dirname "$date_folder")")
 finalname1=$(basename parentdir="$(dirname "$PWD")")
 
-ENVIRONMENT_VERSIONS $PWD
+ENVIRONMENT_VERSIONS /opt/cpu2017/config/gcc7 /opt/cpu2017/config/gcc7
