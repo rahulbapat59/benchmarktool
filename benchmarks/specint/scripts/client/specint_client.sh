@@ -33,6 +33,7 @@ function HELP() {
 function COPY_RESULTS() {
     ssh -l ${2} ${1} "mkdir -p /opt/logs/specint/${finalname}/${finalname1}"
     rsync -r ${date_folder}/* ${2}@${1}:/opt/logs/specint/${finalname}/${finalname1}
+    rsync -r /opt/cpu2017/result/ ${2}@${1}:/opt/logs/specint/${finalname}/${finalname1}
     ssh -l ${2} ${1} "cd /opt/logs/ && ./add_this_result.py /opt/logs/specint/${finalname}/${finalname1}/summary_sorted.html /opt/logs/specint/${finalname}/${finalname1}/"
     echo "Test Ended"
     echo "LOOK FOR THE RESULTS AT THE RESULTS at http://${1}/specint/${finalname}/${finalname1}"
@@ -184,6 +185,6 @@ echo "Collecting Results"
 scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/specint/${finalname}/${finalname1}/SERVER_STATS ../
 
 cp *.csv ../
-#CLEAN_UP
+CLEAN_UP
 COPY_RESULTS ${WEBSERVER} ${USER_NAME}
 
