@@ -166,7 +166,7 @@ START_SYS_MONITOR ${SYS_NAME}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
-cmd="runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/usr/bin --define num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate"
+cmd="runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/usr/ --define num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate"
 echo "`date -u` :: ${cmd}" >> cmdline.txt
 ${cmd} > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
 mv results/* ${PARENT}/${LOG_LOCATION}
