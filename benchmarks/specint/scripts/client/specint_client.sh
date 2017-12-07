@@ -182,6 +182,7 @@ sleep 10
 #cp power_monitor.log $PWD/${LOG_LOCATION}
 
 echo "Collecting Results"
+START_SYS_MONITOR ${SYS_NAME}
 scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/specint/${finalname}/${finalname1}/SERVER_STATS ../
 
 cp *.csv ../
