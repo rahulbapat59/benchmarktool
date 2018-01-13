@@ -32,6 +32,6 @@ loose-innodb_adaptive_hash_index_parts=32
 loose-innodb_numa_interleave=1
 binlog_order_commits=0
 back_log=4096
-innodb_thread_concurrency=96
+innodb_thread_concurrency=256
 ssl=0
 
