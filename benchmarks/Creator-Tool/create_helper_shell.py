@@ -165,10 +165,12 @@ def substitute_options(test_config, test_config_items, template):
 def substitute_help(test_config, test_config_items, template):
     help_string = ""
     for item in test_config_items:
-        help_string += "\techo \"${REV}" + test_config[item]['shorttip'] + " or " + test_config[item][
-            'longtip'] + \
+        default_string = ""
+        if test_config.has_option(item, "default"):
+            default_string = "${NORM}. Default is ${BOLD}" + test_config[item]['default'] + "${NORM}"
+        help_string += "\techo \"${REV}" + test_config[item]['shorttip'] + " or " + test_config[item]['longtip'] + \
                        "${NORM} --Sets the value for option ${BOLD}" + test_config[item]['help'] + \
-                       "${NORM}. Default is ${BOLD}" + test_config[item]['default'] + "${NORM}.\"" + "\n"
+                       default_string + ".\"\n"
     inplace_change(template, "{VARS_PYTHON_HELP}", help_string)
 
 
