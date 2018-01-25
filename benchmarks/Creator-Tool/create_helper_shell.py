@@ -20,10 +20,10 @@ LIST_OF_TESTS_TXT = os.path.join(BASE_DIR, "config", "ListofTests.txt")
 LIST_OF_TESTS_CONFIG = os.path.join(BASE_DIR, "config", "ListofTests.config")
 
 
-'''
-INITIALIZATION FUNCTIONS
-These are used entirely by initialize_test().
-'''
+"""
+    INITIALIZATION FUNCTIONS
+    These are used entirely by initialize_test().
+"""
 
 def generate_directories(test):
     print("\nCreating directories and empty .config file for {0}...".format(test), end='')
@@ -64,10 +64,10 @@ def append_to_test_lists(test):
     print("Complete.")
 
 
-'''
-FILE GENERATION FUNCTIONS
-These are used entirely by generate_files().
-'''
+"""
+    FILE GENERATION FUNCTIONS
+    These are used entirely by generate_files().
+"""
 
 # Returns the appropriate file path for a generated test file (e.g. iperf3_server.sh)
 def filename(test, template_type, new):
@@ -203,9 +203,6 @@ def prompt_diff(test, template_type):
         response = input("Patch with new file? (y/n or ENTER): ") or 'n'
         if response == 'y':
             print("PATCH FILE: " + patch_file)
-            #with open(patch_file, "r") as infile:
-                # This works in bash, but not in subprocess...have to use os.system().
-                # subprocess.call(["patch", "-d", "/", "-p0"], stdin=infile, shell=True)
             os.system("patch -d/ -p0 < {0}".format(patch_file))
             print("Patch performed.")
         else:
@@ -214,10 +211,10 @@ def prompt_diff(test, template_type):
     os.remove(new_file)
 
 
-'''
-PRIMARY FUNCTIONS
-These are the main three functions used in main().
-'''
+"""
+    PRIMARY FUNCTIONS
+    These are the main three functions used in main().
+"""
 
 def get_args():
     parser = argparse.ArgumentParser(description="Creates benchmark directories and generates skeleton code.")
@@ -245,7 +242,7 @@ def generate_files(test):
         test_config.read("../../" + main_config[test]['Helpfile'])
         test_config_items = test_config.sections()
         # If .sh files already exist, ask user if they want to generate new ones and perform a diff
-        new_templates = [] # Populated in the functions below
+        new_templates = [] # Populated by the functions below
         do_server_diff = get_templates_to_generate(main_config, new_templates, 'Server', test)
         do_client_diff = get_templates_to_generate(main_config, new_templates, 'Client', test)
         # Generate template files
@@ -257,10 +254,11 @@ def generate_files(test):
             # Create new template file
             subprocess.call(["cp", "shell-template.sh", template])
             # Perform substitutions
-            substitute_defaults(test_config, test_config_items, template)
-            substitute_help(test_config, test_config_items, template)
             substitute_shorttips(test_config, test_config_items, template)
             substitute_longtips(test_config, test_config_items, template)
+            substitute_options(test_config, test_config_items, template)
+            substitute_help(test_config, test_config_items, template)
+            substitute_defaults(test_config, test_config_items, template)
             inplace_change(template, "${TEST_TYPE}", test)
         # If generated files are NEW, do a diff and ask if user wants to keep
         if do_server_diff == 'y':
@@ -277,10 +275,10 @@ def generate_files(test):
         print("----------\nFor new tests, first run this script with option -i to initialize.")
 
 
-'''
-MAIN FUNCTION
-Calls get_args(), initialize_test(), or generate_files().
-'''
+"""
+    MAIN FUNCTION
+    Calls get_args(), initialize_test(), or generate_files().
+"""
 
 def main():
     args_list = get_args()
