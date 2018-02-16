@@ -104,7 +104,7 @@ if [ $NUMARGS -eq 0 ]; then
   HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n:l: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores:,tune_var: -- "$@")
 then
     exit 1
 fi
@@ -126,7 +126,7 @@ do
                 -c|--copies) COPIES="${2//\'/}" ; shift;;
                 -f|--configpath) CONFIGPATH="${2//\'/}" ; shift;;
                 -t|--type) TYPE="${2//\'/}" ; shift;;
-
+	-l|--tune_var) TUNE_VAR="${2//\'/}" ; shift;;
         --) break;;
         -*) ;;
         *) break;;

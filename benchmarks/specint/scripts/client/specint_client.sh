@@ -12,6 +12,7 @@ CONFIGPATH="/opt/cpu2017/config/gcc7"
 TYPE=int
 WEBSERVER="x86-ivy-cb1"
 NUMCORES=20
+TUNE_VAR=base
 
 function HELP() {
     NORM=`tput sgr0`
@@ -106,7 +107,7 @@ if [ $NUMARGS -eq 0 ]; then
   HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:i:c:f:t:n:l: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,iterations:,copies:,configpath:,type:,num_cores:,tune_var: -- "$@")
 then
     exit 1
 fi
@@ -129,6 +130,7 @@ do
                 -f|--configpath) CONFIGPATH="${2//\'/}" ; shift;;
                 -t|--type) TYPE="${2//\'/}" ; shift;;
                 -n|--num_cores) NUMCORES="${2//\'/}" ; shift;; 
+		-l|--tune_var) TUNE_VAR="${2//\'/}" ; shift;;
         --) break;;
         -*) ;;
         *) break;;
@@ -166,7 +168,7 @@ START_SYS_MONITOR ${SYS_NAME}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
-cmd="runcpu -I --iterations=1 --noreportable -c ${CONFIGPATH} --define gcc_dir=/usr/ --define num_core=${NUMCORES} --copies ${COPIES} ${TYPE}rate"
+cmd="runcpu -I --iterations=3 --noreportable -c ${CONFIGPATH} --define gcc_dir=/usr/ --define num_core=${NUMCORES} --define total_copies=${COPIES} --tune=${tune_var} ${TYPE}rate"
 echo "`date -u` :: ${cmd}" >> cmdline.txt
 ${cmd} > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
 mv results/* ${PARENT}/${LOG_LOCATION}
