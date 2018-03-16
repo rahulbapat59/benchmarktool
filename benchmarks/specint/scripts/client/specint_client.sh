@@ -165,6 +165,7 @@ START_SYS_MONITOR ${SYS_NAME}
 #START_POWER_MONITOR ${SYS_NAME}
 
 #TODO:FIRETESTS
+/benchmarktool/append.sh ${CONFIGPATH}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
