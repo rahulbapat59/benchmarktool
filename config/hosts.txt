@@ -11,3 +11,6 @@
 [localhost]
 [127.0.0.1]
 [x86-ivy-cb1]
+[x86-ivy-cb4]
+[sm6148-2s-02]
+[saber-03]

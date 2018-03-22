@@ -18,6 +18,7 @@ import pipes
 import subprocess
 import sys
 import time
+import traceback
 
 import benchmarks.common.benchmark
 
@@ -181,6 +182,9 @@ def main():
         bm.run(args_list, sub_command_list, c_machines_l)
     except KeyboardInterrupt:
         log.error('Program interrupted!')
+    except:
+        log.error('Unable to launch test:')
+        traceback.print_exc()
     finally:
         print("Ending Test")
         if args_list.postfile is not None:

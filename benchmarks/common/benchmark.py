@@ -10,6 +10,8 @@ import logging
 import multiprocessing
 import os
 import sys
+import subprocess
+import shlex
 
 
 log = logging.getLogger(sys.modules['__main__'].__file__)
@@ -48,6 +50,15 @@ def exec_command(command_to_run, verbose_count):
         os.system(command_to_run)
 
 
+def exec_bg_command(command_to_run, verbose_count):
+    command_to_run = shlex.split(command_to_run)
+    if verbose_count is 4:
+        print(command_to_run)
+    else:
+        log.debug(command_to_run)
+        return subprocess.Popen(command_to_run)
+
+
 class ClassBenchmark(object):
     def __init__(self):
         self._last = 0
@@ -76,35 +87,32 @@ class ClassBenchmark(object):
         if os.path.exists(config[test_valid_options[x]]['Helpfile']):
             sub_config.read(config[test_valid_options[x]]['Helpfile'])
             items_in_this_config = sub_config.sections()
+            valid_types = {"str":str, "int":int, "list":str}
             for items in items_in_this_config:
-                if sub_config.getint(items, 'required') is 1 and sub_config[items]['type'] == "str":
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=str, help=sub_config[items]['help'], required=True)
-                elif sub_config.getint(items, 'required') is 1 and sub_config[items]['type'] == "int":
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=int, help=sub_config[items]['help'], required=True)
-                elif sub_config.getint(items, 'required') is 1 and sub_config[items]['type'] == "list":
+                flags = [sub_config[items]['shorttip'], sub_config[items]['longtip']]
+                extras = {'help':sub_config[items]['help']}
+                config_type = sub_config[items]['type']
+                # Check if the option is assigned a valid type - int, str, or list
+                if config_type in valid_types:
+                    extras['type'] = valid_types.get(config_type)
+                else:
+                    log.error("Invalid config type passed - must be int, str, or list")
+                    sys.exit(0)
+                # List types pass an extra argument
+                if config_type == list:
                     list_options_string = sub_config[items]['choices']
                     list_options = list_options_string.split(",")
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=str, choices=list_options,
-                                             help=sub_config[items]['help'], required=True)
-                elif sub_config.getint(items, 'required') is 0 and sub_config[items]['type'] == "str":
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=str, help=sub_config[items]['help'], required=False,
-                                             default=sub_config[items]['default'])
-                elif sub_config.getint(items, 'required') is 0 and sub_config[items]['type'] == "int":
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=int, help=sub_config[items]['help'], required=False,
-                                             default=sub_config[items]['default'])
-                elif sub_config.getint(items, 'required') is 0 and sub_config[items]['type'] == "list":
-                    list_options_string = sub_config[items]['choices']
-                    list_options = list_options_string.split(",")
-                    sub_options.add_argument(sub_config[items]['shorttip'], sub_config[items]['longtip'],
-                                             type=str, choices=list_options,
-                                             help=sub_config[items]['help'], required=False,
-                                             default=sub_config[items]['default'])
+                    extras['choices'] = list_options
                     log.debug(list_options)
+                # Check if the option has a valid requirement value
+                if sub_config.getint(items, 'required') is 1:
+                    extras['required'] = True
+                    sub_options.add_argument(*flags, **extras)
+                elif sub_config.getint(items, 'required') is 0:
+                    extras['required'] = False
+                    if sub_config.has_option(items, 'default'):
+                        extras['default'] = sub_config[items]['default']
+                    sub_options.add_argument(*flags, **extras)
                 else:
                     log.error("error in config file")
                     sys.exit(0)
@@ -192,7 +200,8 @@ class ClassBenchmark(object):
         # print(extra_options)
         cmd = "ssh -l " + list_of_args.username + " " + list_of_args.server + " \"cd " + self.abs_path_server + \
               " && " + "nohup ./" + list_of_args.command + "_server.sh " + string_sub_command + " \""
-        exec_command(cmd, list_of_args.verbose_count)
+        #exec_command(cmd, list_of_args.verbose_count) 
+        server_cmd = exec_bg_command(cmd, list_of_args.verbose_count)
 
         pool = multiprocessing.Pool(processes=len(clients))
         client_number = 0
@@ -202,6 +211,8 @@ class ClassBenchmark(object):
             client_number += 1
         pool.close()
         pool.join()
+        # The below kills the server process, but not the iperf3 server it starts...
+        server_cmd.terminate()
 
     def report(self):
         log.info("Start Report Generation")

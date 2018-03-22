@@ -104,17 +104,10 @@ def print_missing(item, option):
     print("Section [{0}] is missing {1} option.".format(item, option))
 
 
-# NOTE: TYPE seems to be a required option, but it's not handled at all. Intentional?
 def missing_options(test, test_config, test_config_items, template):
     missing_option = False
     for item in test_config_items:
-        # Check for REQUIRED. If 0, DEFAULT must exist
-        if test_config.has_option(item, "required"):
-            if test_config[item]["required"].strip() == "0":
-                if not test_config.has_option(item, "default"):
-                    print("Section [{0}] has REQUIRED == 0, but no DEFAULT option.".format(item))
-                    missing_option = True
-        else:
+        if not test_config.has_option(item, "required"):
             print_missing(item, "REQUIRED")
             missing_option = True
         if not test_config.has_option(item, "help"):
