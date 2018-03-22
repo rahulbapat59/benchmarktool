@@ -43,43 +43,43 @@ function COPY_RESULTS() {
 }
 
 function START_POWER_MONITOR(){
-            touch $PWD/power_monitor.log
-            for pid in `pidof mpstat`
-            do
-                echo ${pid}>/dev/null 2>&1
-            done
-	        echo $1
-            cmd="python3 get_power.py ${pid} ${PWD}/power_monitor.log ${1}"
-            if [ "$VERBOSE" == 1 ]
-            then
-                echo "`date -u` :: ${cmd}"
-            fi
-            echo "`date -u` :: ${cmd}" >> cmdline.txt
-            eval ${cmd} &
+    touch $PWD/power_monitor.log
+    for pid in `pidof mpstat`
+    do
+        echo ${pid}>/dev/null 2>&1
+    done
+    echo $1
+    cmd="python3 get_power.py ${pid} ${PWD}/power_monitor.log ${1}"
+    if [ "$VERBOSE" == 1 ]
+    then
+        echo "`date -u` :: ${cmd}"
+    fi
+    echo "`date -u` :: ${cmd}" >> cmdline.txt
+    eval ${cmd} &
 }
 
 
 function START_SYS_MONITOR(){
-            touch $PWD/${LOG_LOCATION}/monitor.log
-            mpstat -P ALL 5 | tr -s " " | sed 's/ /,/g' | grep -v '^$' | \
-		 grep -v -e '^[A-Z][a-z].*' >> stat.csv &
+    touch $PWD/${LOG_LOCATION}/monitor.log
+    mpstat -P ALL 5 | tr -s " " | sed 's/ /,/g' | grep -v '^$' | \
+    grep -v -e '^[A-Z][a-z].*' >> stat.csv &
 
-	    for pid in `pidof mpstat`
-            do
-                echo ${pid}>/dev/null 2>&1
-            done
-            cmd="python monitor.py ${date_folder} $pid ${PWD}/${LOG_LOCATION}/monitor.log \
-                benchlog_fn.log ${PWD}/${LOG_LOCATION}/monitor.html ${1}"
-            if [ "$VERBOSE" == 1 ]
-            then
-                echo "`date -u` :: ${cmd}"
-            fi
-            echo "`date -u` :: ${cmd}" >> cmdline.txt
-            eval ${cmd} &
+    for pid in `pidof mpstat`
+    do
+        echo ${pid}>/dev/null 2>&1
+    done
+    cmd="python monitor.py ${date_folder} $pid ${PWD}/${LOG_LOCATION}/monitor.log \
+        benchlog_fn.log ${PWD}/${LOG_LOCATION}/monitor.html ${1}"
+    if [ "$VERBOSE" == 1 ]
+    then
+        echo "`date -u` :: ${cmd}"
+    fi
+    echo "`date -u` :: ${cmd}" >> cmdline.txt
+    eval ${cmd} &
 }
 
 function ENVIRONMENT_VERSIONS(){
-../common/environment.sh
+    ../common/environment.sh
 }
 
 function KILL_MPSTAT(){
@@ -154,70 +154,159 @@ done
 ##TODO: Define ${LOG_LOCATION} and ${logfile}
 #mkdir -p ${LOG_LOCATION}
 #
-echo "===== STARTING IPERF3 CLIENT ====="
 
-if [[ "${VERBOSE}" -eq 0 ]]; then
-    echo "Sleeping for 5s first to allow server to finish launching."
-    sleep 5
-fi
+# REQUIRED: nothing
+# STORED: nothing
+# $1 is time to sleep
+perform_sleep () {
+    if [[ -z ${VERBOSE} ]]; then
+        echo "[$CLIENT] Sleeping for $1s first to allow server to finish launching."
+        sleep $1
+    fi
+}
 
-# Get values to sweep through
-IFS=',' read -r -a mss_sizes <<< "${MSS}"
-IFS=',' read -r -a window_sizes <<< "${WINDOW}"
-IFS=',' read -r -a parallelisms <<< "${PARALLEL}"
+# REQUIRED: sshs key between client and server
+# STORED: nothing
+kill_ip3_server () {
+    if [[ -z ${VERBOSE} ]]; then
+        echo "[$CLIENT] Killing iperf3 processes on server."
+        ssh ${HOST_NAME} pkill iperf3
+    fi
+}
 
-# Determine what interfaces + numa to use
-current_script_dir="$(cd "$(dirname "$0")" ; pwd -P)"
-# PATH IS INCORRECT IF DOING LOCALLY - uncomment if using runme.py
-../SERVER_STATS/choose_ifaces.sh ${TYPE} $current_script_dir
-#../server/choose_ifaces.sh ${TYPE} $current_script_dir
-ip="$(cat my_info | grep "ip=" | awk -F '=' '{print $2}')"
-ip2="$(cat my_info | grep "ip2=" | awk -F '=' '{print $2}')"
-numa="$(cat my_info | grep "numa=" | awk -F '=' '{print $2}')"
-numa2="$(cat my_info | grep "numa2=" | awk -F '=' '{print $2}')"
-rm my_info 2>/dev/null
+# REQUIRED: nothing
+# STORED: $mss_sizes, $window_sizes, $parallelisms, $start_port2
+get_test_parameters () {
+    IFS=',' read -r -a mss_sizes <<< "${MSS}"
+    IFS=',' read -r -a window_sizes <<< "${WINDOW}"
+    IFS=',' read -r -a parallelisms <<< "${PARALLEL}"
+    start_port2=$((${PORT}+${parallelisms[-1]}))
+}
 
-# If 50G test, calculate where to start second IP ports
-[[ ! -z $ip2 ]] && start_port2=$((${PORT}+${parallelisms[-1]}))
+# REQUIRED: ssh keys between client and server
+# STORED: $server_ips
+get_server_ip_list () {
+    server_ips="$(ssh ${HOST_NAME} "netstat -tulpn 2>/dev/null" | grep iperf3 | awk '{print $4}' | awk -F ':' '{print $1}' | sort -u)"
+    # Testing purposes
+    #server_ips="1.17.1.53
+#10.7.56.123"
+    
+    if [[ -z $server_ips ]]; then
+        echo "[$CLIENT] Server is not listening for iperf3, exiting."
+        kill_ip3_server
+        exit 1
+    fi
+    echo "[$CLIENT] SERVER IS USING:"
+    echo "$server_ips"
+}
 
-# Form numa command
-[[ -z $numa ]] && numacmd="" || numacmd="numactl -N $numa"
-[[ -z $numa2 ]] && numacmd2="" || numacmd2="numactl -N $numa2"
+# REQUIRED: choose_ifaces.sh script
+# STORED: $ip, $ip2, $numa, $numa2
+set_my_ip_and_numa () {
+    current_script_dir="$(cd "$(dirname "$0")" ; pwd -P)"
+    ./choose_ifaces.sh ${TYPE} $current_script_dir ${CLIENT}
+    ip="$(cat my_info | grep "ip=" | awk -F '=' '{print $2}')"
+    ip2="$(cat my_info | grep "ip2=" | awk -F '=' '{print $2}')"
+    numa="$(cat my_info | grep "numa=" | awk -F '=' '{print $2}')"
+    numa2="$(cat my_info | grep "numa2=" | awk -F '=' '{print $2}')"
+    [[ -z $numa ]] && numacmd="" || numacmd="numactl -N $numa"
+    [[ -z $numa2 ]] && numacmd2="" || numacmd2="numactl -N $numa2"
+    rm my_info 2>/dev/null
+    echo
+}
 
-# Begin client tests
-for m in "${mss_sizes[@]}"
-do
-    for w in "${window_sizes[@]}"
+# REQUIRED: $ip, $ip2 (set_my_ip_and_numa), 
+#           $server_ips (get_server_ip_list)
+# STORED: $server_ip, $server_ip2
+set_server_ips () {
+    ip_type="$(echo $ip | grep -oP "^[0-9]+.[0-9]+.")"
+    ip2_type="$(echo $ip2 | grep -oP "^[0-9]+.[0-9]+.")"
+    while read -r line; do
+        server_ip_type="$(echo "$line" | grep -oP "^[0-9]+.[0-9]+.")"
+        if [[ ( "$ip_type" == "$server_ip_type" && -z $server_ip ) ]]; then
+            server_ip=$line
+        elif [[ ( "$ip2_type" == "$server_ip_type" && -z $server_ip2 ) ]]; then
+            server_ip2=$line
+        elif [[ ( ! -z $server_ip && ! -z $server_ip2 ) ]]; then
+            break
+        fi
+    done < <(echo "$server_ips")
+    # If nothing matched or the second ip didn't match, exit
+    if [[ ( -z $server_ip && -z $server_ip2 ) || ( ! -z $ip2 && -z $server_ip2 ) ]]; then
+        echo "[$CLIENT] Client/server IPs are incompatible, exiting."
+        kill_ip3_server
+        exit 1
+    fi
+    echo "[$CLIENT] $ip will connect to $server_ip."
+    [[ ! -z $ip2 ]] && echo "[$CLIENT] $ip2 will connect to $server_ip2."
+}
+
+# REQUIRED: Everything from all other functions
+# STORED: nothing
+# $1 is either "server" or "client"
+call_iperf3 () {
+    iperf3="$numacmd iperf3 -c $server_ip -B $ip -t ${TIME}"
+    iperf3_2="$numacmd iperf3 -c $server_ip2 -B $ip2 -t ${TIME}"
+    if [[ "$1" == "client" ]]; then
+        iperf3="$iperf3 -R"
+        iperf3_2="$iperf3_2 -R"
+    fi
+    for m in "${mss_sizes[@]}"
     do
-        for p in "${parallelisms[@]}"
+        for w in "${window_sizes[@]}"
         do
-            echo "===== MSS=$m, Window=$w, Parallelism=$p"
-            curr_port=${PORT}
-            curr_port2=$start_port2
-            for i in $(seq 1 $p)
+            for p in "${parallelisms[@]}"
             do
-                # TODO: figure out how to get client IP
-                cmd="$numacmd iperf3 -c ${CLIENT} -B $ip -p $curr_port -t ${TIME} -M $m -w $w"
-                [[ "$i" -lt "$p" ]] || [[ ! -z $ip2 ]] && cmd="${cmd} &"
-                echo $cmd
-                [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
-                curr_port=$((curr_port+1))
-            done
-            if [[ ! -z $ip2 ]]; then
+                timestamp="$(date +"%I:%M %p")"
+                echo "[$CLIENT] ===== MSS=$m, Window=$w, Parallelism=$p ($timestamp) ====="
+                curr_port=${PORT}
+                curr_port2=$start_port2
                 for i in $(seq 1 $p)
                 do
-                    # TODO: figure out how to get client IP #2
-                    cmd="$numacmd2 iperf3 -c ${CLIENT} -B $ip2 -p $curr_port2 -t ${TIME} -M $m -w $w"
-                    [[ "$i" -lt "$p" ]] && cmd="${cmd} &"
-                    echo $cmd
-                    [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
-                    curr_port2=$((curr_port2+1))
+                    cmd="$iperf3 -p $curr_port -M $m -w $w"
+                    [[ "$i" -lt "$p" ]] || [[ ! -z $ip2 ]] && cmd="${cmd} &"
+                    echo "[$CLIENT] $cmd"
+                    [[ -z ${VERBOSE} ]] && eval $cmd
+                    curr_port=$((curr_port+1))
                 done
-            fi
+                if [[ ! -z $ip2 ]]; then
+                    for i in $(seq 1 $p)
+                    do
+                        cmd="$iperf3_2 -p $curr_port2 -M $m -w $w"
+                        [[ "$i" -lt "$p" ]] && cmd="${cmd} &"
+                        echo "[$CLIENT] $cmd"
+                        [[ -z ${VERBOSE} ]] && eval $cmd
+                        curr_port2=$((curr_port2+1))
+                    done
+                fi
+            done
+            [[ -z ${VERBOSE} ]] && sleep 5
         done
     done
-done
+}
 
+# The client is run below
+timestamp="$(date +"%I:%M %p")"
+echo "[$CLIENT] ===== STARTING IPERF3 CLIENT ($timestamp) ====="
+perform_sleep 3
+get_test_parameters
+get_server_ip_list
+set_my_ip_and_numa
+set_server_ips
+
+timestamp="$(date +"%I:%M %p")"
+echo "[$CLIENT] ***** BEGINNING IPERF3 WITH ${HOST_NAME} AS SERVER ($timestamp) *****" 
+call_iperf3 "server"
+echo
+
+timestamp="$(date +"%I:%M %p")"
+echo "[$CLIENT] ***** BEGINNING IPERF3 WITH ${HOST_NAME} AS CLIENT ($timestamp) *****"
+call_iperf3 "client"
+echo
+
+timestamp="$(date +"%I:%M %p")"
+echo "[$CLIENT] ***** IPERF3 TESTS HAVE COMPLETED ($timestamp) *****"
+kill_ip3_server
 #
 #touch $PWD/${LOG_LOCATION}/monitor.log
 #touch $PWD/${LOG_LOCATION}/power_monitor.log

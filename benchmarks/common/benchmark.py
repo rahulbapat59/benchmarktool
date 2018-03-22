@@ -212,7 +212,7 @@ class ClassBenchmark(object):
             client_number += 1
         pool.close()
         pool.join()
-        # The below kills the server process, but not the iperf3 server it starts...
+        # The below kills the main server process, but not any background children processes that it starts...
         server_cmd.terminate()
 
     def report(self):

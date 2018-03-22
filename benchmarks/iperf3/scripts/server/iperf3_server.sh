@@ -154,43 +154,50 @@ done
 ##TODO: Define ${LOG_LOCATION} and ${logfile}
 #mkdir -p ${LOG_LOCATION}
 #
-echo "===== STARTING IPERF3 SERVER ====="
-echo "PORT=${PORT}, TYPE=${TYPE}, PARALLEL=${PARALLEL}"
-echo
 
-# Ensure there are no persistent servers running
-pkill iperf3 
+# REQUIRED: choose_ifaces.sh script
+# STORED: $ip, $ip2, $numa, $numa2
+set_my_ip_and_numa () {
+    current_script_dir="$(cd "$(dirname "$0")" ; pwd -P)"
+    ./choose_ifaces.sh ${TYPE} $current_script_dir ${HOST_NAME}
+    ip="$(cat my_info | grep "ip=" | awk -F '=' '{print $2}')"
+    ip2="$(cat my_info | grep "ip2=" | awk -F '=' '{print $2}')"
+    numa="$(cat my_info | grep "numa=" | awk -F '=' '{print $2}')"
+    numa2="$(cat my_info | grep "numa2=" | awk -F '=' '{print $2}')"
+    rm my_info 2>/dev/null
+}
 
-# Determine what interfaces + numa to use
-current_script_dir="$(cd "$(dirname "$0")" ; pwd -P)"
-./choose_ifaces.sh ${TYPE} $current_script_dir
-ip="$(cat my_info | grep "ip=" | awk -F '=' '{print $2}')"
-ip2="$(cat my_info | grep "ip2=" | awk -F '=' '{print $2}')"
-numa="$(cat my_info | grep "numa=" | awk -F '=' '{print $2}')"
-numa2="$(cat my_info | grep "numa2=" | awk -F '=' '{print $2}')"
-rm my_info 2>/dev/null
-
-# Start servers
-[[ -z $numa ]] && numacmd="" || numacmd="numactl -N $numa"
-num_streams=$(echo ${PARALLEL##*,})
-current_port=${PORT}
-for i in $(seq 1 $num_streams); do
-    cmd="$numacmd iperf3 -s -B $ip -p $current_port &"
-    echo $cmd
-    [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
-    current_port=$(($current_port+1))
-done
-if [[ ! -z $ip2 ]]; then
-    [[ -z $numa2 ]] && numacmd="" || numacmd="numactl -N $numa2"
-    current_port2=$((${PORT}+$num_streams))
+# REQUIRED: everything from set_my_ip_and_numa
+# STORED: nothing
+call_iperf3 () {
+    [[ -z $numa ]] && numacmd="" || numacmd="numactl -N $numa"
+    num_streams=$(echo ${PARALLEL##*,})
+    current_port=${PORT}
     for i in $(seq 1 $num_streams); do
-        cmd="$numacmd iperf3 -s -B $ip2 -p $current_port2 &"
-        echo $cmd
+        cmd="$numacmd iperf3 -s -B $ip -p $current_port &"
+        echo "[$HOST_NAME] $cmd"
         [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
-        current_port2=$(($current_port2+1)) 
+        current_port=$(($current_port+1))
     done
-fi
-echo "===== IPERF3 SERVER STARTED ====="
+    if [[ ! -z $ip2 ]]; then
+        [[ -z $numa2 ]] && numacmd="" || numacmd="numactl -N $numa2"
+        current_port2=$((${PORT}+$num_streams))
+        for i in $(seq 1 $num_streams); do
+            cmd="$numacmd iperf3 -s -B $ip2 -p $current_port2 &"
+            echo "[$HOST_NAME] $cmd"
+            [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
+            current_port2=$(($current_port2+1)) 
+        done
+    fi
+}
+
+# The server is run below
+echo "[$HOST_NAME] ===== STARTING IPERF3 SERVER ====="
+echo "[$HOST_NAME] PORT=${PORT}, TYPE=${TYPE}, PARALLEL=${PARALLEL}"
+pkill iperf3 
+set_my_ip_and_numa
+call_iperf3
+echo "[$HOST_NAME] ===== IPERF3 SERVER STARTED ====="
 #
 #touch $PWD/${LOG_LOCATION}/monitor.log
 #touch $PWD/${LOG_LOCATION}/power_monitor.log
