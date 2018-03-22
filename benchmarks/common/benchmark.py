@@ -98,12 +98,13 @@ class ClassBenchmark(object):
                 else:
                     log.error("Invalid config type passed - must be int, str, or list")
                     sys.exit(0)
-                # List types pass an extra argument
-                if config_type == list:
-                    list_options_string = sub_config[items]['choices']
-                    list_options = list_options_string.split(",")
-                    extras['choices'] = list_options
-                    log.debug(list_options)
+                # List types can pass an extra argument for choices
+                if config_type == "list":
+                    if sub_config.has_option(items, 'choices'):
+                        list_options_string = sub_config[items]['choices']
+                        list_options = list_options_string.split(",")
+                        extras['choices'] = list_options
+                        log.debug(list_options)
                 # Check if the option has a valid requirement value
                 if sub_config.getint(items, 'required') is 1:
                     extras['required'] = True
