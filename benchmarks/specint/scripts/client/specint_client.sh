@@ -169,7 +169,7 @@ sudo /benchmarktool/append.sh ${CONFIGPATH}
 pushd /opt/cpu2017
 . shrc
 #runcpu -I --iterations=1 --noreportable --output_root=${PARENT}/${LOG_LOCATION} -c ${CONFIGPATH} --copies ${COPIES} ${TYPE}rate > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
-cmd="runcpu -I --iterations=3 --reportable --flagsurl=/mnt/nas/benchmarks/specint/gcc.xml -c ${CONFIGPATH} --define gcc_dir=/usr/ --define num_core=${NUMCORES} --define total_copies=${COPIES} --tune=${TUNE_VAR} ${TYPE}rate"
+cmd="runcpu -I --iterations=3 --noreportable --flagsurl=/mnt/nas/benchmarks/specint/gcc.xml -c ${CONFIGPATH} --define gcc_dir=/usr/ --define num_core=${NUMCORES} --define total_copies=${COPIES} --tune=${TUNE_VAR} ${TYPE}rate"
 echo "`date -u` :: ${cmd}" >> cmdline.txt
 ${cmd} > ${PARENT}/${LOG_LOCATION}/${logfile} 2>&1
 mv results/* ${PARENT}/${LOG_LOCATION}

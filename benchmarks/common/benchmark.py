@@ -55,7 +55,7 @@ class ClassBenchmark(object):
         self.abs_path_client = ""
 
     def parse_args(self, list_of_args, parser):
-        # print("in parse args\n")
+        print("in parse args\n")
         args_file = "config/ListofTests.config"
         config = configparser.ConfigParser()
         config.sections()
@@ -128,7 +128,7 @@ class ClassBenchmark(object):
              exec_command(cmd, list_of_args.verbose_count)
 
     def prepare(self, list_of_args, sub_command_args, time_right_now, clients):
-        # print("In prepare")
+        print("In prepare")
         self.abs_path_server = benchmark_location + list_of_args.command + "/" + list_of_args.comment + "/" + \
                                str(time_right_now) + "/" + "SERVER_STATS"
         cmd = "ssh -l " + list_of_args.username + " " + list_of_args.server + " \"mkdir -p " + self.abs_path_server + "\""
