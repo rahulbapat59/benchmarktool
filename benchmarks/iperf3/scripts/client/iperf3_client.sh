@@ -141,18 +141,19 @@ do
 done
 
 
-#date_folder=$(dirname $PWD)
-#comment_folder=$(dirname ${date_folder})
-#finalname=$(basename parentdir="$(dirname "$date_folder")")
-#finalname1=$(basename parentdir="$(dirname "$PWD")")
+date_folder=$(dirname $PWD)
+comment_folder=$(dirname ${date_folder})
+finalname=$(basename parentdir="$(dirname "$date_folder")")
+finalname1=$(basename parentdir="$(dirname "$PWD")")
 #
-#sudo chmod -R 760 $PWD
-#touch iperf3.type
+sudo chmod -R 760 $PWD
+touch iperf3.type
 #
-#logdate=$(date +%F)
+logdate=$(date +%F)
 #
 #TODO: Define ${LOG_LOCATION} and ${logfile}
-#mkdir -p ${LOG_LOCATION}
+LOG_LOCATION=logs
+mkdir -p ${LOG_LOCATION}
 
 
 # REQUIRED: nothing
@@ -293,6 +294,11 @@ call_iperf3 () {
 
 # The client is run below
 timestamp="$(date +"%I:%M %p")"
+touch $PWD/${LOG_LOCATION}/monitor.log
+touch $PWD/${LOG_LOCATION}/power_monitor.log
+#
+START_SYS_MONITOR ${SYS_NAME}
+START_POWER_MONITOR ${SYS_NAME}
 echo "[$CLIENT] ===== STARTING IPERF3 CLIENT ($timestamp) ====="
 perform_sleep 3
 get_test_parameters
@@ -329,16 +335,16 @@ echo "[$CLIENT] ***** GENERATING RESULTS CSVs *****"
 #
 #echo -n "Power:" >> ${LOG_LOCATION}/${logfile}
 #
-#KILL_MPSTAT
-#sleep 10
-#cat powerstats.csv >> ${LOG_LOCATION}/${logfile}
+KILL_MPSTAT
+sleep 30
+cat powerstats.csv >> ${LOG_LOCATION}/${logfile}
 #
-#cp powerstats.csv $PWD/${LOG_LOCATION}
-#cp power_monitor.log $PWD/${LOG_LOCATION}
+cp powerstats.csv $PWD/${LOG_LOCATION}
+cp power_monitor.log $PWD/${LOG_LOCATION}
 #
-#echo "Collecting Results"
-#scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/iperf3/${finalname}/${finalname1}/SERVER_STATS ../
+echo "Collecting Results"
+scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/iperf3/${finalname}/${finalname1}/SERVER_STATS ../
 
 #cp *.csv ../
 #CLEAN_UP
-#COPY_RESULTS ${WEBSERVER} ${USER_NAME}
+COPY_RESULTS ${WEBSERVER} ${USER_NAME}

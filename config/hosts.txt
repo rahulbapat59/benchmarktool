@@ -17,3 +17,5 @@
 [saber-03]
 [saber-11]
 [epyc-2s-01]
+[sm2650-2s-01]
+[saber-05]
