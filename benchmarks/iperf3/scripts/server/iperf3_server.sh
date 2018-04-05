@@ -24,7 +24,7 @@ function HELP() {
 	echo "${REV}-p or --port${NORM} --Sets the value for option ${BOLD}The port to use for running iperf3. For multi-parallel tests, ports will be assigned starting with this specified value${NORM}. Default is ${BOLD}5201${NORM}."
 	echo "${REV}-t or --time${NORM} --Sets the value for option ${BOLD}Time in seconds to transmit for${NORM}. Default is ${BOLD}120${NORM}."
 	echo "${REV}-P or --parallel${NORM} --Sets the value for option ${BOLD}List of parallelisms to test (e.g. 1,2,4,8...)${NORM}. Default is ${BOLD}1${NORM}."
-	echo "${REV}-w or --window${NORM} --Sets the value for option ${BOLD}List of window sizes to test (e.g. 64K,83K...)${NORM}. Default is ${BOLD}87380${NORM}."
+	echo "${REV}-W or --window${NORM} --Sets the value for option ${BOLD}List of window sizes to test (e.g. 64K,83K...)${NORM}. Default is ${BOLD}87380${NORM}."
 	echo "${REV}-M or --set-mss${NORM} --Sets the value for option ${BOLD}List of MSS sizes to test (e.g. 128, 256, 512...)${NORM}. Default is ${BOLD}1460${NORM}."
 	echo "${REV}-T or --type${NORM} --Sets the value for option ${BOLD}Specify 1G, 10G, 25G, 50G, or 100G test. Assumes a machine has the specified interfaces present${NORM}. Default is ${BOLD}1G${NORM}."
 
@@ -108,7 +108,7 @@ if [ $NUMARGS -eq 0 ]; then
     HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:p:t:P:w:M:T: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,port:,time:,parallel:,window:,set-mss:,type: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:p:t:P:W:M:T: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,port:,time:,parallel:,window:,set-mss:,type: -- "$@")
 then
     exit 1
 fi
@@ -129,7 +129,7 @@ do
 		-p|--port) PORT="${2//\'/}" ; shift;;
 		-t|--time) TIME="${2//\'/}" ; shift;;
 		-P|--parallel) PARALLEL="${2//\'/}" ; shift;;
-		-w|--window) WINDOW="${2//\'/}" ; shift;;
+		-W|--window) WINDOW="${2//\'/}" ; shift;;
 		-M|--set-mss) MSS="${2//\'/}" ; shift;;
 		-T|--type) TYPE="${2//\'/}" ; shift;;
 
@@ -175,6 +175,7 @@ call_iperf3 () {
     current_port=${PORT}
     for i in $(seq 1 $num_streams); do
         cmd="$numacmd iperf3 -s -B $ip -p $current_port &"
+        echo $cmd >> "server-cmdline.txt"
         echo "[$HOST_NAME] $cmd"
         [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
         current_port=$(($current_port+1))
@@ -184,6 +185,7 @@ call_iperf3 () {
         current_port2=$((${PORT}+$num_streams))
         for i in $(seq 1 $num_streams); do
             cmd="$numacmd iperf3 -s -B $ip2 -p $current_port2 &"
+            echo $cmd >> "server-cmdline.txt"
             echo "[$HOST_NAME] $cmd"
             [[ "${VERBOSE}" -eq 0 ]] && eval $cmd
             current_port2=$(($current_port2+1)) 

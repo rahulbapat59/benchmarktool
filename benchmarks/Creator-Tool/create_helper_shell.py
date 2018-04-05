@@ -190,13 +190,13 @@ def prompt_diff(test, template_type):
         patch_file = os.path.join(
             DIR_PATH, test, "scripts", template_type, "{0}_{1}.patch".format(test, template_type))
         with open(patch_file, "w") as outfile:
-            subprocess.call(["diff", "-u", old_file, new_file], stdout=outfile)
+            subprocess.call(["diff", "-uw", old_file, new_file], stdout=outfile)
         subprocess.call(["cat", patch_file])
         print("\n################################################################\n")
         response = input("Patch with new file? (y/n or ENTER): ") or 'n'
         if response == 'y':
             print("PATCH FILE: " + patch_file)
-            os.system("patch -d/ -p0 < {0}".format(patch_file))
+            os.system("patch -b -d/ -p0 < {0}".format(patch_file))
             print("Patch performed.")
         else:
             print("Discarding patch and keeping old files.")

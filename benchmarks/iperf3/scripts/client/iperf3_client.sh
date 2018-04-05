@@ -24,7 +24,7 @@ function HELP() {
 	echo "${REV}-p or --port${NORM} --Sets the value for option ${BOLD}The port to use for running iperf3. For multi-parallel tests, ports will be assigned starting with this specified value${NORM}. Default is ${BOLD}5201${NORM}."
 	echo "${REV}-t or --time${NORM} --Sets the value for option ${BOLD}Time in seconds to transmit for${NORM}. Default is ${BOLD}120${NORM}."
 	echo "${REV}-P or --parallel${NORM} --Sets the value for option ${BOLD}List of parallelisms to test (e.g. 1,2,4,8...)${NORM}. Default is ${BOLD}1${NORM}."
-	echo "${REV}-w or --window${NORM} --Sets the value for option ${BOLD}List of window sizes to test (e.g. 64K,83K...)${NORM}. Default is ${BOLD}87380${NORM}."
+	echo "${REV}-W or --window${NORM} --Sets the value for option ${BOLD}List of window sizes to test (e.g. 64K,83K...)${NORM}. Default is ${BOLD}87380${NORM}."
 	echo "${REV}-M or --set-mss${NORM} --Sets the value for option ${BOLD}List of MSS sizes to test (e.g. 128, 256, 512...)${NORM}. Default is ${BOLD}1460${NORM}."
 	echo "${REV}-T or --type${NORM} --Sets the value for option ${BOLD}Specify 1G, 10G, 25G, 50G, or 100G test. Assumes a machine has the specified interfaces present${NORM}. Default is ${BOLD}1G${NORM}."
 
@@ -108,7 +108,7 @@ if [ $NUMARGS -eq 0 ]; then
   HELP
 fi
 
-if ! options=$(getopt -o s:c:C:w:u:x:y:hv:p:t:P:w:M:T: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,port:,time:,parallel:,window:,set-mss:,type: -- "$@")
+if ! options=$(getopt -o s:c:C:w:u:x:y:hv:p:t:P:W:M:T: -l server:,webserver:,username:,client:,prefile:,postfile:,help,verbose_count:,port:,time:,parallel:,window:,set-mss:,type: -- "$@")
 then
     exit 1
 fi
@@ -129,7 +129,7 @@ do
 		-p|--port) PORT="${2//\'/}" ; shift;;
 		-t|--time) TIME="${2//\'/}" ; shift;;
 		-P|--parallel) PARALLEL="${2//\'/}" ; shift;;
-		-w|--window) WINDOW="${2//\'/}" ; shift;;
+		-W|--window) WINDOW="${2//\'/}" ; shift;;
 		-M|--set-mss) MSS="${2//\'/}" ; shift;;
 		-T|--type) TYPE="${2//\'/}" ; shift;;
 
@@ -151,9 +151,9 @@ done
 #
 #logdate=$(date +%F)
 #
-##TODO: Define ${LOG_LOCATION} and ${logfile}
+#TODO: Define ${LOG_LOCATION} and ${logfile}
 #mkdir -p ${LOG_LOCATION}
-#
+
 
 # REQUIRED: nothing
 # STORED: nothing
@@ -204,7 +204,7 @@ get_server_ip_list () {
 # STORED: $ip, $ip2, $numa, $numa2
 set_my_ip_and_numa () {
     current_script_dir="$(cd "$(dirname "$0")" ; pwd -P)"
-    ./choose_ifaces.sh ${TYPE} $current_script_dir ${CLIENT}
+    ./choose_ifaces.sh ${TYPE} $current_script_dir ${CLIENT} $server_ips
     ip="$(cat my_info | grep "ip=" | awk -F '=' '{print $2}')"
     ip2="$(cat my_info | grep "ip2=" | awk -F '=' '{print $2}')"
     numa="$(cat my_info | grep "numa=" | awk -F '=' '{print $2}')"
@@ -245,9 +245,11 @@ set_server_ips () {
 # STORED: nothing
 # $1 is either "server" or "client"
 call_iperf3 () {
+    dir=$server_dir
     iperf3="$numacmd iperf3 -c $server_ip -B $ip -t ${TIME}"
     iperf3_2="$numacmd iperf3 -c $server_ip2 -B $ip2 -t ${TIME}"
     if [[ "$1" == "client" ]]; then
+        dir=$client_dir
         iperf3="$iperf3 -R"
         iperf3_2="$iperf3_2 -R"
     fi
@@ -263,18 +265,22 @@ call_iperf3 () {
                 curr_port2=$start_port2
                 for i in $(seq 1 $p)
                 do
-                    cmd="$iperf3 -p $curr_port -M $m -w $w"
+                    datafile="$dir/$m-$w-$p-part$i-1.txt"
+                    cmd="$iperf3 -p $curr_port -M $m -w $w | tee -a $datafile"
                     [[ "$i" -lt "$p" ]] || [[ ! -z $ip2 ]] && cmd="${cmd} &"
-                    echo "[$CLIENT] $cmd"
+                    echo $cmd >> "client-cmdline.txt"
+                    #echo "[$CLIENT] $cmd"
                     [[ -z ${VERBOSE} ]] && eval $cmd
                     curr_port=$((curr_port+1))
                 done
                 if [[ ! -z $ip2 ]]; then
                     for i in $(seq 1 $p)
                     do
-                        cmd="$iperf3_2 -p $curr_port2 -M $m -w $w"
+                        datafile="$dir/$m-$w-$p-part$i-2.txt"
+                        cmd="$iperf3_2 -p $curr_port2 -M $m -w $w | tee -a $datafile"
                         [[ "$i" -lt "$p" ]] && cmd="${cmd} &"
-                        echo "[$CLIENT] $cmd"
+                        echo $cmd >> "client-cmdline.txt"
+                        #echo "[$CLIENT] $cmd"
                         [[ -z ${VERBOSE} ]] && eval $cmd
                         curr_port2=$((curr_port2+1))
                     done
@@ -293,6 +299,10 @@ get_test_parameters
 get_server_ip_list
 set_my_ip_and_numa
 set_server_ips
+server_dir="results/${HOST_NAME}-as-server"
+client_dir="results/${HOST_NAME}-as-client"
+mkdir -p $server_dir
+mkdir -p $client_dir
 
 timestamp="$(date +"%I:%M %p")"
 echo "[$CLIENT] ***** BEGINNING IPERF3 WITH ${HOST_NAME} AS SERVER ($timestamp) *****" 
@@ -307,6 +317,9 @@ echo
 timestamp="$(date +"%I:%M %p")"
 echo "[$CLIENT] ***** IPERF3 TESTS HAVE COMPLETED ($timestamp) *****"
 kill_ip3_server
+
+echo "[$CLIENT] ***** GENERATING RESULTS CSVs *****"
+./make_csv.sh $server_dir $client_dir ${MSS} ${WINDOW} ${PARALLEL}
 #
 #touch $PWD/${LOG_LOCATION}/monitor.log
 #touch $PWD/${LOG_LOCATION}/power_monitor.log
@@ -325,7 +338,7 @@ kill_ip3_server
 #
 #echo "Collecting Results"
 #scp -r ${USER_NAME}@${HOST_NAME}:/opt/benchmarks/iperf3/${finalname}/${finalname1}/SERVER_STATS ../
-#
+
 #cp *.csv ../
 #CLEAN_UP
 #COPY_RESULTS ${WEBSERVER} ${USER_NAME}

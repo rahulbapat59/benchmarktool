@@ -22,7 +22,7 @@ while read -r line; do
     fi
 done < <(echo "$interfaces")
 ip="" && speed=""
-echo "[$3] Listing interfaces..."
+echo "[$NAME] Listing interfaces..."
 echo -e $iface_list
 
 # Determine if there are matching interfaces
@@ -30,13 +30,13 @@ echo -e $iface_list
 matching=$(echo -e $iface_list | grep $search_speed)
 # No matching speed: use 10.7.56 interface (any speed)
 if [[ -z $matching ]]; then
-    echo "[$3] There are no $search_speed interfaces on this machine."
+    echo "[$NAME] There are no $search_speed interfaces on this machine."
     first_ip10=$(echo -e "$iface_list" | grep 10.7.56 | head -n 1)
     iface=$(echo "$first_ip10" | awk -F '/' '{print $1}' | awk -F '.' '{print $1}')
     numa="$(cat /sys/class/net/$iface/device/numa_node)"    
     ip=$(echo $first_ip10 | awk -F '/' '{print $2}')
     speed=$(echo $first_ip10 | awk -F '/' '{print $3}')
-    echo "[$3] Using first 10.7.56 interface ($first_ip10)."
+    echo "[$NAME] Using first 10.7.56 interface ($first_ip10)."
 else
     occurrences=$(echo "$matching" | wc -l)
     speed=${TYPE}
@@ -81,31 +81,31 @@ if [[ "$occurrences" -gt 1 ]]; then
         numa2="$(cat /sys/class/net/$iface2/device/numa_node)"
         ip=$(echo "$ip" | head -n 1 | awk -F '/' '{print $2}')
         ip2=$(echo "$ip2" | head -n 1 | awk -F '/' '{print $2}')
-        echo "[$3] Using ($ip)."
-        [[ ! -z $ip2 ]] && echo "[$3] Using ($ip2)."
+        echo "[$NAME] Using ($ip)."
+        [[ ! -z $ip2 ]] && echo "[$NAME] Using ($ip2)."
     # 1G/10G/25G/100G: 1.17 > 1.18 > 10.7.56 > 10.0.0
     else
         if [[ ! -z $ip17 ]]; then
             ip=$ip17
         elif [[ ! -z $ip18 ]]; then
-            ip=$ip_18
+            ip=$ip18
         elif [[ ! -z $ip10 ]]; then
-            ip=$ip_10
+            ip=$ip10
         else
             ip=$matching
         fi
         iface=$(echo "$ip" | head -n 1 | awk -F '/' '{print $1}' | awk -F '.' '{print $1}')
         numa="$(cat /sys/class/net/$iface/device/numa_node)"
         ip=$(echo "$ip" | head -n 1 | awk -F '/' '{print $2}')
-        echo "[$3] More than one $speed interface found, using ($ip)."
+        echo "[$NAME] More than one $speed interface found, using ($ip)."
     fi
 # If there's only one match, obviously use that one
 elif [[ "$occurrences" -eq 1 ]]; then
-    [[ "$speed" == "50G" ]] && echo "[$3] Only one 25G interface available, switching to 25G test."
+    [[ "$speed" == "50G" ]] && echo "[$NAME] Only one 25G interface available, switching to 25G test."
     iface=$(echo "$matching" | awk -F '/' '{print $1}' | awk -F '.' '{print $1}')
     numa="$(cat /sys/class/net/$iface/device/numa_node)"
     ip=$(echo "$matching" | awk -F '/' '{print $2}')
-    echo "[$3] Using ($ip)."
+    echo "[$NAME] Using ($ip)."
 fi
 
 rm $OUTPUT_DIR/my_info 2>/dev/null
