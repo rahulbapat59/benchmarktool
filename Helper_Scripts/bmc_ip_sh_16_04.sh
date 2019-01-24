@@ -1,11 +1,11 @@
 #!/bin/bash
 #for CRB-1s system with 16.04
-[ $(id -u) != "0" ] && {
+[[ $(id -u) != "0" ]] && {
     echo "You are not root" >&2
     exit 1
 }
 
-[ -c /dev/ipmi0 ] || {
+[[ -c /dev/ipmi0 ]] || {
     modprobe i2c-dev
     insmod /opt/i2c-octeon-4.4.0-31-generic.ko
     modprobe ipmi_msghandler
